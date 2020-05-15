@@ -7,10 +7,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"strconv"
 	"strings"
-	_ "net/http/pprof"
 )
 
 const MaxInputSize = 250000
