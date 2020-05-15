@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
+	lz4 "github.com/hungys/go-lz4"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/pierrec/lz4"
-	"io"
 )
 
 type DemStorage struct {
@@ -17,13 +16,15 @@ type DemStorage struct {
 var TileNotFound = errors.New("not found")
 
 func uncompressLZ4(buf []byte) ([]byte, error) {
-	lz4Reader := lz4.NewReader(bytes.NewReader(buf))
-	var uncompressed bytes.Buffer
-	_, err := io.Copy(&uncompressed, lz4Reader)
+	uncompressed := make([]byte, 301*301*2)
+	n, err := lz4.DecompressSafe(buf, uncompressed)
+	if n != 301*301*2 {
+		return nil, errors.New(fmt.Sprintf("Unexpected tile size: %v", n))
+	}
 	if err != nil {
 		return nil, err
 	}
-	return uncompressed.Bytes(), nil
+	return uncompressed, nil
 }
 
 func (store *DemStorage) getDemTile(index TileIndex) (*Tile, error) {
