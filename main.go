@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	math2 "math"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -17,6 +18,31 @@ const MaxInputSize = 250000
 const MaxInputPoints = 10000
 
 var demStorage *DemStorage
+
+func fastFloatToString(f float64) string {
+	var s string
+	i := int(math2.Round(f * 100))
+	if i >= 100 || i <= -100 {
+		s = strconv.Itoa(i)
+		l := len(s)
+		return s[:l-2] + "." + s[l-2:]
+	}
+	sign := 1
+	if i < 0 {
+		sign = -1
+		i *= -1
+	}
+	s = strconv.Itoa(i)
+	if i < 10 {
+		s = "0.0" + s
+	} else {
+		s = "0." + s
+	}
+	if sign == -1 {
+		s = "-" + s
+	}
+	return s
+}
 
 func handleRequest(resp http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
@@ -81,7 +107,7 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 	for i, elevation := range elevations {
 		// TODO: reduce to 1 digit
 		// TODO: handle no-data values
-		strElevations[i] = fmt.Sprintf("%.2f", elevation)
+		strElevations[i] = fastFloatToString(elevation)
 	}
 	result := strings.Join(strElevations, "\n")
 	resp.Write([]byte(result))
