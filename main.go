@@ -107,6 +107,7 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 	// TODO: log error
 	if err != nil {
 		http.Error(resp, "Server error", http.StatusInternalServerError)
+		log.Printf("Failed to get elevation: %s", err)
 		return
 	}
 	strElevations := make([]string, len(elevations))
