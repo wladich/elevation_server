@@ -34,7 +34,10 @@ func (store *DemStorage) getDemTile(index TileIndex) (*Tile, error) {
 	defer rows.Close()
 	if rows.Next() {
 		var buf []byte
-		rows.Scan(&buf)
+		err = rows.Scan(&buf)
+		if err != nil {
+			return nil, err
+		}
 		uncompressed, err := uncompressLZ4(buf)
 		if err != nil {
 			return nil, err
