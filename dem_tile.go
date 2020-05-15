@@ -1,8 +1,9 @@
 package main
 
 import (
-	"encoding/binary"
 	"math"
+	"reflect"
+	"unsafe"
 )
 
 const NoValue = -32768
@@ -20,11 +21,10 @@ type Tile struct {
 }
 
 func bytesToInt16(b []byte) []int16 {
-	h := make([]int16, len(b)/2)
-	for i := range h {
-		h[i] = int16(binary.LittleEndian.Uint16(b[i*2 : (i+1)*2]))
-	}
-	return h
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	sliceHeader.Cap /= 2
+	sliceHeader.Len /= 2
+	return *(*[]int16)(unsafe.Pointer(sliceHeader))
 }
 
 func (tile *Tile) getInterpolated(latlon LatLon) float64 {
