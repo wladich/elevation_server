@@ -72,17 +72,23 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 			return
 		}
 		if len(line) > 0 {
-			fields := strings.Fields(line)
-			if len(fields) != 2 {
+			last := len(line) - 1
+			if line[last] == '\n' {
+				line = line[:last]
+			}
+			spaceIndex := strings.Index(line, " ")
+			if spaceIndex == -1 {
 				http.Error(resp, "Invalid request", http.StatusBadRequest)
 				return
 			}
-			lat, err := strconv.ParseFloat(fields[0], 64)
+			latStr := line[:spaceIndex]
+			lonStr := line[spaceIndex+1:]
+			lat, err := strconv.ParseFloat(latStr, 64)
 			if err != nil {
 				http.Error(resp, "Invalid request", http.StatusBadRequest)
 				return
 			}
-			lon, err := strconv.ParseFloat(fields[1], 64)
+			lon, err := strconv.ParseFloat(lonStr, 64)
 			if err != nil {
 				http.Error(resp, "Invalid request", http.StatusBadRequest)
 				return
