@@ -1,33 +1,34 @@
 package main
 
-type LatLon struct {
-	lat, lon float64
+import (
+	"github.com/wladich/elevation_server/pkg/dem"
+)
+
+type orderedLatLon struct {
+	i      int
+	latlon dem.LatLon
 }
 
-func getElevations(storage DemStorage, latlons []LatLon) ([]float64, error) {
-	type OrderedLatLon struct {
-		i      int
-		latlon LatLon
-	}
+func getElevations(storage dem.StorageReader, latlons []dem.LatLon) ([]float64, error) {
 	elevations := make([]float64, len(latlons))
-	tasks := make(map[TileIndex][]OrderedLatLon)
+	tasks := make(map[dem.TileIndex][]orderedLatLon)
 	for i, latlon := range latlons {
-		tileIndex := tileIndexFromLatLon(latlon)
-		tasks[tileIndex] = append(tasks[tileIndex], OrderedLatLon{i, latlon})
+		tileIndex := dem.TileIndexFromLatLon(latlon)
+		tasks[tileIndex] = append(tasks[tileIndex], orderedLatLon{i, latlon})
 	}
 	for tileIndex, task := range tasks {
-		tile, err := storage.getDemTile(tileIndex)
-		switch err {
-		case TileNotFound:
-			for _, orderedLatLon := range task {
-				elevations[orderedLatLon.i] = NoValue
-			}
-		case nil:
-			for _, orderedLatLon := range task {
-				elevations[orderedLatLon.i] = tile.getInterpolated(orderedLatLon.latlon)
-			}
-		default:
+		tile, err := storage.GetTile(tileIndex)
+		if err != nil {
 			return nil, err
+		}
+		if tile == nil {
+			for _, orderedLatLon := range task {
+				elevations[orderedLatLon.i] = dem.NoValue
+			}
+		} else {
+			for _, orderedLatLon := range task {
+				elevations[orderedLatLon.i] = tile.GetInterpolated(orderedLatLon.latlon)
+			}
 		}
 	}
 	return elevations, nil

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/wladich/elevation_server/pkg/dem"
 	"io"
 	"log"
 	math2 "math"
@@ -17,7 +18,7 @@ import (
 const MaxInputSize = 250000
 const MaxInputPoints = 10000
 
-var demStorage *DemStorage
+var demStorage *dem.StorageReader
 
 func fastFloatToString(f float64) string {
 	var s string
@@ -56,14 +57,14 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 
 	contentLengthHeaders := req.Header["Content-Length"]
 	if len(contentLengthHeaders) > 0 {
-		contentLength, err := strconv.ParseInt(contentLengthHeaders[0], 10, 32)
+		contentLength, err := strconv.Atoi(contentLengthHeaders[0])
 		if err == nil && contentLength > MaxInputSize {
 			http.Error(resp, "Request too big", http.StatusRequestEntityTooLarge)
 			return
 		}
 	}
 
-	var latlons []LatLon
+	var latlons []dem.LatLon
 	inputLinesReader := bufio.NewReader(http.MaxBytesReader(resp, req.Body, MaxInputSize))
 	for {
 		line, readErr := inputLinesReader.ReadString('\n')
@@ -93,7 +94,7 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 				http.Error(resp, "Invalid request", http.StatusBadRequest)
 				return
 			}
-			latlons = append(latlons, LatLon{lat, lon})
+			latlons = append(latlons, dem.LatLon{Lat: lat, Lon: lon})
 		}
 		if len(latlons) > MaxInputPoints {
 			http.Error(resp, "Request too big", http.StatusRequestEntityTooLarge)
@@ -113,8 +114,11 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 	strElevations := make([]string, len(elevations))
 	for i, elevation := range elevations {
 		// TODO: reduce to 1 digit
-		// TODO: handle no-data values
-		strElevations[i] = fastFloatToString(elevation)
+		if elevation == dem.NoValue {
+			strElevations[i] = "NULL"
+		} else {
+			strElevations[i] = fastFloatToString(elevation)
+		}
 	}
 	result := strings.Join(strElevations, "\n")
 	resp.Write([]byte(result))
@@ -129,11 +133,13 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	storage, err := openDemStorage(*dataFile)
+	var err error
+	demStorage, err = dem.NewReader(*dataFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	demStorage = &storage
+	defer demStorage.Close()
+
 	http.HandleFunc("/", handleRequest)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", *host, *port), nil))
 }
