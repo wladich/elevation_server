@@ -132,7 +132,10 @@ func makeTiles(hgtDir, demStorageFile string, concurency int) {
 		log.Fatal(err)
 	}
 
-	bar := pb.Full.Start(len(files))
+	template := `{{counters . }} {{bar . }} {{percent . }} {{etime . "Elapsed %8s"}} {{rtime . "ETA %8s"}}`
+	bar := pb.ProgressBarTemplate(template).Start(len(files))
+	bar.SetMaxWidth(100)
+
 	defer bar.Finish()
 
 	jobs := make(chan string, concurency)
