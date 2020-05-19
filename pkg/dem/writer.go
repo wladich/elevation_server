@@ -3,8 +3,8 @@ package dem
 import (
 	"encoding/gob"
 	"errors"
-	"github.com/pierrec/lz4"
 	"github.com/wladich/elevation_server/pkg/constants"
+	"github.com/wladich/elevation_server/pkg/lz4"
 	"io"
 	"os"
 	"sync"
@@ -49,23 +49,12 @@ func (storage *StorageWriter) Close() error {
 	return err3
 }
 
-func compressTile(tileData TileRawData) ([]byte, error) {
-	compressed := make([]byte, lz4.CompressBlockBound(len(tileData)))
-	n, err := lz4.CompressBlockHC(tileData[:], compressed, 0)
-	if err != nil {
-		return nil, err
-	}
-	if n == 0 {
-		return nil, errors.New("compressed data has 0 size")
-	}
-	return compressed[:n], nil
+func compressTile(tileData TileRawData) []byte {
+	return lz4.CompressHigh(tileData[:], 12)
 }
 
 func (storage *StorageWriter) PutTile(tile TileRaw) error {
-	compressed, err := compressTile(tile.Data)
-	if err != nil {
-		return err
-	}
+	compressed := compressTile(tile.Data)
 	storage.lock.Lock()
 	defer storage.lock.Unlock()
 	pos, err := storage.fData.Seek(0, io.SeekCurrent)
