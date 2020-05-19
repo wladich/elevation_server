@@ -50,7 +50,7 @@ func decompressTile(compressed []byte) (*TileRawData, error) {
 	return &tileData, nil
 }
 
-func (storage StorageReader) GetTile(index TileIndex) (*Tile, error) {
+func (storage *StorageReader) GetTile(index TileIndex) (*Tile, error) {
 	x := index.X + 180*constants.HgtSplitParts
 	y := index.Y + 90*constants.HgtSplitParts
 	if x < 0 || y < 0 || x > len(storage.index) || y > len(storage.index[x]) {
@@ -79,7 +79,7 @@ func (storage StorageReader) GetTile(index TileIndex) (*Tile, error) {
 	return &tile, nil
 }
 
-func (storage StorageReader) Close() error {
+func (storage *StorageReader) Close() error {
 	err1 := storage.indexMmap.Unmap()
 	err2 := storage.fIdx.Close()
 	err3 := storage.fData.Close()
