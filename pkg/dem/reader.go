@@ -1,15 +1,13 @@
 package dem
 
 import (
+	"encoding/gob"
 	"errors"
 	"fmt"
-	"github.com/edsrzf/mmap-go"
 	"github.com/hungys/go-lz4"
 	"github.com/wladich/elevation_server/pkg/constants"
 	"io"
 	"os"
-	"reflect"
-	"unsafe"
 )
 
 type StorageReader storageAbstract
@@ -23,18 +21,17 @@ func NewReader(path string) (*StorageReader, error) {
 	}
 	storage.fData = f
 
+	storage.index = &tileFileIndex{}
 	f, err = os.Open(idxPath)
 	if err != nil {
 		return nil, err
 	}
-	storage.fIdx = f
-
-	storage.indexMmap, err = mmap.Map(storage.fIdx, mmap.RDONLY, 0)
-	if err != nil {
+	defer f.Close()
+	decoder := gob.NewDecoder(f)
+	if err = decoder.Decode(storage.index); err!= nil {
 		return nil, err
 	}
-	mmapData := (*reflect.SliceHeader)(unsafe.Pointer(&storage.indexMmap)).Data
-	storage.index = (*tileFileIndex)(unsafe.Pointer(mmapData))
+
 	return &storage, nil
 }
 
@@ -57,18 +54,18 @@ func (storage *StorageReader) GetTile(index TileIndex) (*Tile, error) {
 		return nil, nil
 	}
 	tileFileIndex := storage.index[x][y]
-	if tileFileIndex.size == 0 {
+	if tileFileIndex.Size == 0 {
 		return nil, nil
 	}
-	if _, err := storage.fData.Seek(tileFileIndex.offset, io.SeekStart); err != nil {
+	if _, err := storage.fData.Seek(tileFileIndex.Offset, io.SeekStart); err != nil {
 		return nil, err
 	}
-	compressed := make([]byte, tileFileIndex.size)
+	compressed := make([]byte, tileFileIndex.Size)
 	n, err := storage.fData.Read(compressed)
 	if err != nil {
 		return nil, err
 	}
-	if int64(n) != tileFileIndex.size {
+	if int64(n) != tileFileIndex.Size {
 		return nil, errors.New("tile data incomplete")
 	}
 	tileData, err := decompressTile(compressed)
@@ -80,15 +77,5 @@ func (storage *StorageReader) GetTile(index TileIndex) (*Tile, error) {
 }
 
 func (storage *StorageReader) Close() error {
-	err1 := storage.indexMmap.Unmap()
-	err2 := storage.fIdx.Close()
-	err3 := storage.fData.Close()
-	storage.index = nil
-	if err1 != nil {
-		return err1
-	}
-	if err2 != nil {
-		return err2
-	}
-	return err3
+	return storage.fData.Close()
 }

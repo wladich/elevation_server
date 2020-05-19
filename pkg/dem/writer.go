@@ -1,20 +1,19 @@
 package dem
 
 import (
+	"encoding/gob"
 	"errors"
-	"github.com/edsrzf/mmap-go"
 	"github.com/pierrec/lz4"
 	"github.com/wladich/elevation_server/pkg/constants"
 	"io"
 	"os"
-	"reflect"
 	"sync"
-	"unsafe"
 )
 
 type StorageWriter struct {
 	storageAbstract
 	lock sync.Mutex
+	fIdx *os.File
 }
 
 func NewWriter(path string) (*StorageWriter, error) {
@@ -31,24 +30,16 @@ func NewWriter(path string) (*StorageWriter, error) {
 		return nil, err
 	}
 	storage.fIdx = f
-	if err = os.Truncate(idxPath, int64(unsafe.Sizeof(*storage.index))); err != nil {
-		return nil, err
-	}
 
-	storage.indexMmap, err = mmap.Map(storage.fIdx, mmap.RDWR, 0)
-	if err != nil {
-		return nil, err
-	}
-	mmapData := (*reflect.SliceHeader)(unsafe.Pointer(&storage.indexMmap)).Data
-	storage.index = (*tileFileIndex)(unsafe.Pointer(mmapData))
+	storage.index = &tileFileIndex{}
 	return &storage, nil
 }
 
 func (storage *StorageWriter) Close() error {
-	err1 := storage.indexMmap.Unmap()
+	encoder := gob.NewEncoder(storage.fIdx)
+	err1 := encoder.Encode(*storage.index)
 	err2 := storage.fIdx.Close()
 	err3 := storage.fData.Close()
-	storage.index = nil
 	if err1 != nil {
 		return err1
 	}

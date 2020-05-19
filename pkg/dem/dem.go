@@ -1,7 +1,6 @@
 package dem
 
 import (
-	"github.com/edsrzf/mmap-go"
 	"github.com/wladich/elevation_server/pkg/constants"
 	"math"
 	"os"
@@ -26,16 +25,15 @@ type TileRaw struct {
 }
 
 type tileFileIndexRecord struct {
-	offset int64
-	size   int64
+	Offset int64
+	Size   int64
 }
 
 type tileFileIndex [360 * constants.HgtSplitParts][180 * constants.HgtSplitParts]tileFileIndexRecord
 
 type storageAbstract struct {
-	fData, fIdx *os.File
-	indexMmap   mmap.MMap
-	index       *tileFileIndex
+	fData *os.File
+	index *tileFileIndex
 }
 
 type Tile struct {
