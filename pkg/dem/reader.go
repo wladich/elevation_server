@@ -4,7 +4,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"github.com/hungys/go-lz4"
+	"github.com/wladich/elevation_server/pkg/lz4"
 	"github.com/wladich/elevation_server/pkg/constants"
 	"io"
 	"os"
@@ -28,7 +28,7 @@ func NewReader(path string) (*StorageReader, error) {
 	}
 	defer f.Close()
 	decoder := gob.NewDecoder(f)
-	if err = decoder.Decode(storage.index); err!= nil {
+	if err = decoder.Decode(storage.index); err != nil {
 		return nil, err
 	}
 
@@ -37,7 +37,7 @@ func NewReader(path string) (*StorageReader, error) {
 
 func decompressTile(compressed []byte) (*TileRawData, error) {
 	var tileData TileRawData
-	n, err := lz4.DecompressSafe(compressed, tileData[:])
+	n, err := lz4.Decompress(compressed, tileData[:])
 	if n != constants.TileBytes {
 		return nil, errors.New(fmt.Sprintf("Unexpected tile size: %v", n))
 	}

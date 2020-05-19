@@ -5,7 +5,10 @@ package lz4
 // #include "lz4hc.h"
 // #cgo LDFLAGS: -llz4
 import "C"
-import "unsafe"
+import (
+	"errors"
+	"unsafe"
+)
 
 func byteSliceToCharPointer(b []byte) *C.char {
 	if len(b) == 0 {
@@ -30,4 +33,16 @@ func CompressHigh(source []byte, compressionLevel int) []byte {
 		panic("Unexpected error while compressing with LZ4")
 	}
 	return dest[:n]
+}
+
+func Decompress(source, dest []byte) (int, error) {
+	n := C.LZ4_decompress_safe(
+		byteSliceToCharPointer(source),
+		byteSliceToCharPointer(dest),
+		C.int(len(source)),
+		C.int(len(dest)))
+	if n < 0 {
+		return int(n), errors.New("error decompressing lz4 block")
+	}
+	return int(n), nil
 }
