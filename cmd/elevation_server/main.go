@@ -141,5 +141,6 @@ func main() {
 	defer demStorage.Close()
 
 	http.HandleFunc("/", handleRequest)
+	log.Printf("Serving at %s:%d", *host, *port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", *host, *port), nil))
 }
