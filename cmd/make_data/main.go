@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -103,36 +104,63 @@ func splitDem(index HgtIndex, data *HgtRawData) (tiles TileRawSet) {
 	return
 }
 
-func makeTiles(hgtDir, demStorageFile string) {
+func processHgt(filename string, hgtDir string, storage *dem.StorageWriter) (error) {
+	hgt, err := readHgtFile(path.Join(hgtDir, filename))
+	if err != nil {
+		return err
+	}
+	index, err := hgtIndexFromName(filename)
+	if err != nil {
+		return err
+	}
+	for _, tile := range splitDem(index, hgt) {
+		if err = storage.PutTile(tile); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func makeTiles(hgtDir, demStorageFile string, concurency int) {
+	storage, err := dem.NewWriter(demStorageFile)
+	if err != nil {
+		panic(err)
+	}
+
 	files, err := ioutil.ReadDir(hgtDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	storage, err := dem.NewWriter(demStorageFile)
-	if err != nil {
-		panic(err)
-	}
 	bar := pb.Full.Start(len(files))
 	defer bar.Finish()
 
-	for _, filename := range files {
-		hgt, err := readHgtFile(path.Join(hgtDir, filename.Name()))
-		if err != nil {
-			panic(err)
+	jobs := make(chan string, concurency)
+
+	results := make(chan error, concurency)
+
+	go func() {
+		for _, filename := range files {
+			jobs <- filename.Name()
 		}
-		index, err := hgtIndexFromName(filename.Name())
-		if err != nil {
-			panic(err)
-		}
-		for _, tile := range splitDem(index, hgt) {
-			err = storage.PutTile(tile)
-			if err != nil {
-				panic(err)
+		close(jobs)
+	}()
+
+	for i := 0; i < concurency; i++ {
+		go func () {
+			for filename := range jobs {
+				results <- processHgt(filename, hgtDir, storage)
 			}
+		}()
+	}
+
+	for i := 0; i < len(files); i++ {
+		if err := <- results; err != nil {
+			panic(err)
 		}
 		bar.Increment()
 	}
+
 	err = storage.Close()
 	if err != nil {
 		panic(err)
@@ -147,5 +175,6 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	makeTiles(*hgtDir, *demStorageFile)
+	numCPUs := runtime.NumCPU()
+	makeTiles(*hgtDir, *demStorageFile, numCPUs + 1)
 }

@@ -8,10 +8,14 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"sync"
 	"unsafe"
 )
 
-type StorageWriter storageAbstract
+type StorageWriter struct {
+	storageAbstract
+	lock sync.Mutex
+}
 
 func NewWriter(path string) (*StorageWriter, error) {
 	var storage StorageWriter
@@ -40,7 +44,7 @@ func NewWriter(path string) (*StorageWriter, error) {
 	return &storage, nil
 }
 
-func (storage StorageWriter) Close() error {
+func (storage *StorageWriter) Close() error {
 	err1 := storage.indexMmap.Unmap()
 	err2 := storage.fIdx.Close()
 	err3 := storage.fData.Close()
@@ -66,11 +70,13 @@ func compressTile(tileData TileRawData) ([]byte, error) {
 	return compressed[:n], nil
 }
 
-func (storage StorageWriter) PutTile(tile TileRaw) error {
+func (storage *StorageWriter) PutTile(tile TileRaw) error {
 	compressed, err := compressTile(tile.Data)
 	if err != nil {
 		return err
 	}
+	storage.lock.Lock()
+	defer storage.lock.Unlock()
 	pos, err := storage.fData.Seek(0, io.SeekCurrent)
 	if err != nil {
 		return err
