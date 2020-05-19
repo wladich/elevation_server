@@ -104,7 +104,7 @@ func splitDem(index HgtIndex, data *HgtRawData) (tiles TileRawSet) {
 	return
 }
 
-func processHgt(filename string, hgtDir string, storage *dem.StorageWriter) (error) {
+func processHgt(filename string, hgtDir string, storage *dem.StorageWriter) error {
 	hgt, err := readHgtFile(path.Join(hgtDir, filename))
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func makeTiles(hgtDir, demStorageFile string, concurency int) {
 	}()
 
 	for i := 0; i < concurency; i++ {
-		go func () {
+		go func() {
 			for filename := range jobs {
 				results <- processHgt(filename, hgtDir, storage)
 			}
@@ -155,7 +155,7 @@ func makeTiles(hgtDir, demStorageFile string, concurency int) {
 	}
 
 	for i := 0; i < len(files); i++ {
-		if err := <- results; err != nil {
+		if err := <-results; err != nil {
 			panic(err)
 		}
 		bar.Increment()
@@ -176,5 +176,5 @@ func main() {
 		os.Exit(1)
 	}
 	numCPUs := runtime.NumCPU()
-	makeTiles(*hgtDir, *demStorageFile, numCPUs + 1)
+	makeTiles(*hgtDir, *demStorageFile, numCPUs+1)
 }
