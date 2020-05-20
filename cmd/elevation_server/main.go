@@ -146,6 +146,8 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+	log.Printf("Starting server with parameter: host=%v, port=%v, dataFile=%v, maxClients=%v",
+		*host, *port, *dataFile, *maxClients)
 	var err error
 	demStorage, err = dem.NewReader(*dataFile)
 	if err != nil {
