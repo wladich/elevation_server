@@ -122,10 +122,25 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte(result))
 }
 
+func limitNumClients(f http.HandlerFunc, maxClients int) http.HandlerFunc {
+	// Counting semaphore using a buffered channel
+	sema := make(chan struct{}, maxClients)
+
+	return func(w http.ResponseWriter, req *http.Request) {
+		if len(sema) == maxClients {
+			log.Printf("Number of concurrent clients reached maxClient (%v), the request will be blocked", maxClients)
+		}
+		sema <- struct{}{}
+		defer func() { <-sema }()
+		f(w, req)
+	}
+}
+
 func main() {
 	port := flag.Int("port", 8080, "port to listen")
 	host := flag.String("host", "127.0.0.1", "address to bind to")
 	dataFile := flag.String("dem", "", "path to file with elevation tile")
+	maxClients := flag.Int("threads", 10, "maximum number of concurrently served requests")
 	flag.Parse()
 	if *dataFile == "" {
 		flag.Usage()
@@ -138,7 +153,7 @@ func main() {
 	}
 	defer demStorage.Close()
 
-	http.HandleFunc("/", handleRequest)
+	http.HandleFunc("/", limitNumClients(handleRequest, *maxClients))
 	log.Printf("Serving at %s:%d", *host, *port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", *host, *port), nil))
 }
