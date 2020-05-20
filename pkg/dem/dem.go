@@ -1,7 +1,6 @@
 package dem
 
 import (
-	"github.com/wladich/elevation_server/pkg/constants"
 	"math"
 	"os"
 )
@@ -16,8 +15,8 @@ type TileIndex struct {
 	X, Y int
 }
 
-type TileRawData [constants.TileBytes]byte
-type TileData [constants.TilePointsN]int16
+type TileRawData [TileBytes]byte
+type TileData [TilePointsN]int16
 
 type TileRaw struct {
 	Data  TileRawData
@@ -29,7 +28,7 @@ type tileFileIndexRecord struct {
 	Size   int64
 }
 
-type tileFileIndex [360 * constants.HgtSplitParts][180 * constants.HgtSplitParts]tileFileIndexRecord
+type tileFileIndex [360 * HgtSplitParts][180 * HgtSplitParts]tileFileIndexRecord
 
 type storageAbstract struct {
 	fData *os.File
@@ -42,7 +41,7 @@ type Tile struct {
 }
 
 func TileIndexFromLatLon(latlon LatLon) TileIndex {
-	x := int(math.Floor(latlon.Lon * constants.HgtSplitParts))
-	y := int(math.Floor(latlon.Lat * constants.HgtSplitParts))
+	x := int(math.Floor(latlon.Lon * HgtSplitParts))
+	y := int(math.Floor(latlon.Lat * HgtSplitParts))
 	return TileIndex{x, y}
 }

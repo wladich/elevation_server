@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"github.com/cheggaaa/pb/v3"
-	"github.com/wladich/elevation_server/pkg/constants"
 	"github.com/wladich/elevation_server/pkg/dem"
 	"io"
 	"io/ioutil"
@@ -20,13 +19,13 @@ import (
 	"strings"
 )
 
-type HgtRawData [constants.HgtSize * constants.HgtSize * 2]byte
+type HgtRawData [dem.HgtSize * dem.HgtSize * 2]byte
 
 type HgtIndex struct {
 	lat, lon int
 }
 
-type TileRawSet [constants.HgtSplitParts * constants.HgtSplitParts]dem.TileRaw
+type TileRawSet [dem.HgtSplitParts * dem.HgtSplitParts]dem.TileRaw
 
 func readHgtFile(path string) (*HgtRawData, error) {
 	ext := strings.ToLower(filepath.Ext(path))
@@ -53,11 +52,11 @@ func readHgtFile(path string) (*HgtRawData, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(rawData) != constants.HgtSize*constants.HgtSize*2 {
+	if len(rawData) != dem.HgtSize*dem.HgtSize*2 {
 		return nil, errors.New("invalid HGT size")
 	}
 	var result HgtRawData
-	for i := 0; i < constants.HgtSize*constants.HgtSize; i++ {
+	for i := 0; i < dem.HgtSize*dem.HgtSize; i++ {
 		result[i*2], result[i*2+1] = rawData[i*2+1], rawData[i*2]
 	}
 	return &result, nil
@@ -83,19 +82,19 @@ func hgtIndexFromName(name string) (HgtIndex, error) {
 }
 
 func splitDem(index HgtIndex, data *HgtRawData) (tiles TileRawSet) {
-	for tileDx := 0; tileDx < constants.HgtSplitParts; tileDx++ {
-		for tileDy := 0; tileDy < constants.HgtSplitParts; tileDy++ {
-			tileX := index.lon*constants.HgtSplitParts + tileDx
-			tileY := index.lat*constants.HgtSplitParts + tileDy
-			tileI := tileDy*constants.HgtSplitParts + tileDx
+	for tileDx := 0; tileDx < dem.HgtSplitParts; tileDx++ {
+		for tileDy := 0; tileDy < dem.HgtSplitParts; tileDy++ {
+			tileX := index.lon*dem.HgtSplitParts + tileDx
+			tileY := index.lat*dem.HgtSplitParts + tileDy
+			tileI := tileDy*dem.HgtSplitParts + tileDx
 			tile := &tiles[tileI]
 			tile.Index.X = tileX
 			tile.Index.Y = tileY
-			for row := 0; row < constants.TileSize; row++ {
-				hgtRow := constants.HgtSize - 1 - tileDy*(constants.TileSize-1) - row
-				hgtIndex := hgtRow*constants.HgtSize + tileDx*(constants.TileSize-1)
-				n := copy(tile.Data[row*constants.TileSize*2:], data[hgtIndex*2:(hgtIndex+constants.TileSize)*2])
-				if n != constants.TileSize*2 {
+			for row := 0; row < dem.TileSize; row++ {
+				hgtRow := dem.HgtSize - 1 - tileDy*(dem.TileSize-1) - row
+				hgtIndex := hgtRow*dem.HgtSize + tileDx*(dem.TileSize-1)
+				n := copy(tile.Data[row*dem.TileSize*2:], data[hgtIndex*2:(hgtIndex+dem.TileSize)*2])
+				if n != dem.TileSize*2 {
 					panic("invalid number of bytes copied")
 				}
 			}

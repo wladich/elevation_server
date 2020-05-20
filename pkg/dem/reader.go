@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"github.com/wladich/elevation_server/pkg/constants"
 	"github.com/wladich/elevation_server/pkg/lz4"
 	"io"
 	"os"
@@ -38,7 +37,7 @@ func NewReader(path string) (*StorageReader, error) {
 func decompressTile(compressed []byte) (*TileRawData, error) {
 	var tileData TileRawData
 	n, err := lz4.Decompress(compressed, tileData[:])
-	if n != constants.TileBytes {
+	if n != TileBytes {
 		return nil, errors.New(fmt.Sprintf("Unexpected tile size: %v", n))
 	}
 	if err != nil {
@@ -48,8 +47,8 @@ func decompressTile(compressed []byte) (*TileRawData, error) {
 }
 
 func (storage *StorageReader) GetTile(index TileIndex) (*Tile, error) {
-	x := index.X + 180*constants.HgtSplitParts
-	y := index.Y + 90*constants.HgtSplitParts
+	x := index.X + 180*HgtSplitParts
+	y := index.Y + 90*HgtSplitParts
 	if x < 0 || y < 0 || x > len(storage.index) || y > len(storage.index[x]) {
 		return nil, nil
 	}

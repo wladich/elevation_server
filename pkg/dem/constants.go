@@ -1,4 +1,4 @@
-package constants
+package dem
 
 const HgtSize = 1201
 const HgtSplitParts = 4

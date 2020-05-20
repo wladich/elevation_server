@@ -3,7 +3,6 @@ package dem
 import (
 	"encoding/gob"
 	"errors"
-	"github.com/wladich/elevation_server/pkg/constants"
 	"github.com/wladich/elevation_server/pkg/lz4"
 	"io"
 	"os"
@@ -65,8 +64,8 @@ func (storage *StorageWriter) PutTile(tile TileRaw) error {
 	if err != nil {
 		return err
 	}
-	x := tile.Index.X + 180*constants.HgtSplitParts
-	y := tile.Index.Y + 90*constants.HgtSplitParts
+	x := tile.Index.X + 180*HgtSplitParts
+	y := tile.Index.Y + 90*HgtSplitParts
 	if x < 0 || y < 0 || x > len(storage.index) || y > len(storage.index[x]) {
 		return errors.New("tile index out of range")
 	}
