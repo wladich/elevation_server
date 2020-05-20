@@ -105,7 +105,6 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 	elevations, err := getElevations(*demStorage, latlons)
-	// TODO: log error
 	if err != nil {
 		http.Error(resp, "Server error", http.StatusInternalServerError)
 		log.Printf("Failed to get elevation: %s", err)
@@ -113,7 +112,6 @@ func handleRequest(resp http.ResponseWriter, req *http.Request) {
 	}
 	strElevations := make([]string, len(elevations))
 	for i, elevation := range elevations {
-		// TODO: reduce to 1 digit
 		if elevation == dem.NoValue {
 			strElevations[i] = "NULL"
 		} else {
