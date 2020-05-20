@@ -4,8 +4,8 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"github.com/wladich/elevation_server/pkg/lz4"
 	"github.com/wladich/elevation_server/pkg/constants"
+	"github.com/wladich/elevation_server/pkg/lz4"
 	"io"
 	"os"
 )

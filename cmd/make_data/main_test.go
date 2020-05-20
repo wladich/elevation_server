@@ -11,8 +11,8 @@ import "testing"
 //}
 
 func TestHgtIndexFromName(t *testing.T) {
-	testData := []struct{
-		name string
+	testData := []struct {
+		name     string
 		lat, lon int
 	}{
 		{"S50W037.hgt.bz2", -50, -37},
