@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/wladich/elevation_server/pkg/lz4"
-	"io"
 	"os"
 )
 
@@ -56,11 +55,8 @@ func (storage *StorageReader) GetTile(index TileIndex) (*Tile, error) {
 	if tileFileIndex.Size == 0 {
 		return nil, nil
 	}
-	if _, err := storage.fData.Seek(tileFileIndex.Offset, io.SeekStart); err != nil {
-		return nil, err
-	}
 	compressed := make([]byte, tileFileIndex.Size)
-	n, err := storage.fData.Read(compressed)
+	n, err := storage.fData.ReadAt(compressed, tileFileIndex.Offset)
 	if err != nil {
 		return nil, err
 	}
