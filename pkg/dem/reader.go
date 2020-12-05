@@ -48,7 +48,7 @@ func decompressTile(compressed []byte) (*TileRawData, error) {
 func (storage *StorageReader) GetTile(index TileIndex) (*Tile, error) {
 	x := index.X + 180*HgtSplitParts
 	y := index.Y + 90*HgtSplitParts
-	if x < 0 || y < 0 || x > len(storage.index) || y > len(storage.index[x]) {
+	if x < 0 || y < 0 || x >= len(storage.index) || y >= len(storage.index[x]) {
 		return nil, nil
 	}
 	tileFileIndex := storage.index[x][y]
